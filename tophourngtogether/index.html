@@ -181,7 +181,7 @@ function mapSvg(ht,me){
 /* ---- ผลลัพธ์: โต๊ะ + ผัง + เพื่อนร่วมโต๊ะ ---- */
 function result(t,me){
  const m=TM[t],g=me!=null?D[me]:null;
- const head=g?`<div class="tag">#${TITLE}</div><div class="mut">ยินดีต้อนรับ</div><b style="font-size:1.2rem">${g.name}</b><div class="sep"></div><b>โต๊ะของคุณ คือ โต๊ะหมายเลข</b>`:`<div class="tag">#${TITLE}</div><b>โต๊ะหมายเลข</b>`;
+ const head=g?`<div class="tag">#${TITLE}</div><div class="mut">ยินดีต้อนรับ</div><b style="font-size:1.2rem">${g.name}</b><div class="sep"></div><b>โต๊ะของคุณ คือ</b>`:`<div class="tag">#${TITLE}</div><b>โต๊ะหมายเลข</b>`;
  return `<div class="card gold">${SP}${head}<div class="big">${t}</div><span class="pill ${m.s}">${tLabel(m)}</span></div>
  <h2>เส้นทางไปโต๊ะ${g?'ของคุณ':''}</h2><div class="card mapc">${mapSvg(t,me)}</div>
  <h2>นั่งโต๊ะเดียวกับ</h2><div class="chips">${m.g.map(x=>`<a class="chip ${x.id===me?'me':''}" href="#guest-${x.id}"><span class="av ${x.s}">${ini(x.name)}</span><span>${x.name}</span></a>`).join('')}</div>

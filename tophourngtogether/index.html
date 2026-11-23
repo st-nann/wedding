@@ -89,17 +89,17 @@ svg{width:100%;height:auto;display:block}
 html{color-scheme:light;background:rgb(255,226,196)}body{background:var(--bgimg) fixed;background-color:rgb(255,226,196)}
 .big{background-image:var(--num);filter:drop-shadow(0 4px 14px rgba(51,41,112,.25))}
 .pill.G,.pill.B,.av.G,.av.B{color:var(--tx)}
-.hdr{text-align:center;margin:2px 0 10px}
+.hdr{text-align:center;margin:2px 0 28px}
 .hdr img{max-width:100%;height:auto;display:block;margin:0 auto}
 .hdr .ttl{width:min(100%,360px);height:auto}
-.hdr .dec{margin-top:2px;width:min(66%,260px);-webkit-mask-image:linear-gradient(to bottom,#000 80%,transparent);mask-image:linear-gradient(to bottom,#000 80%,transparent)}
+.hdr .dec{margin-top:20px;width:min(66%,260px);-webkit-mask-image:linear-gradient(to bottom,#000 80%,transparent);mask-image:linear-gradient(to bottom,#000 80%,transparent)}
 .hdrt{font-weight:700;font-size:1.25rem;color:var(--gold)}
 .hint{margin:8px 4px 0;font-size:.85rem;color:var(--mut);text-align:center}
 .btn.G,.btn.B{display:flex;flex-direction:column;align-items:center;gap:6px;border:0;color:var(--tx);padding:14px 10px 16px}
 .btn.G{background:var(--gs)}.btn.B{background:var(--bs)}
 .btn svg{width:76px;height:76px}
 .lnk{text-align:center;margin:18px 0 0}
-.lnk a{color:var(--tx);text-decoration:underline;text-underline-offset:4px;font-weight:600}
+.lnk a{color:var(--tx);text-decoration:none;font-weight:600}
 .crumb{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:.85rem;color:var(--mut);margin:4px 0 12px}
 .crumb a{text-decoration:underline;text-underline-offset:3px}
 .crumb i{font-style:normal;opacity:.6}
@@ -109,6 +109,11 @@ html{color-scheme:light;background:rgb(255,226,196)}body{background:var(--bgimg)
 .fl{position:absolute;top:0;background-size:contain;background-repeat:no-repeat;opacity:.9;will-change:transform;animation:fall linear infinite}
 @keyframes fall{0%{transform:translate3d(0,-8vh,0) rotate(0)}50%{transform:translate3d(var(--sw,30px),50vh,0) rotate(200deg)}100%{transform:translate3d(0,108vh,0) rotate(380deg)}}
 @media(prefers-reduced-motion:reduce){.petals{display:none}}
+.tn{width:64px;height:64px;border:0;border-radius:0;padding-top:4px;font-size:1.3rem;color:#ec7a86;text-shadow:none;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 21S3.4 15.800 2 9.800C1.300 6.400 3.500 3.800 6.600 3.800c2.200 0 4.100 1.300 5.400 3.400 1.300-2.100 3.200-3.400 5.400-3.400 3.100 0 5.300 2.600 4.600 6C20.600 15.800 12 21 12 21z' fill='%23fff9c4' stroke='%23ef8f84' stroke-width='1.2'/%3E%3C/svg%3E") center/contain no-repeat}
+.crumb a,.crumb b{display:inline-block;padding:4px 13px;border-radius:99px;font-size:.82rem;text-decoration:none;line-height:1.5}
+.crumb a{background:var(--card);border:1px solid var(--bd);color:var(--tx)}
+.crumb b{background:var(--bs);border:1px solid var(--bs);color:var(--tx);font-weight:600}
+.crumb i{opacity:.5}
 </style>
 </head>
 <body>
@@ -116,11 +121,11 @@ html{color-scheme:light;background:rgb(255,226,196)}body{background:var(--bgimg)
 <div class="wrap" id="app"></div>
 <script>
 /* ===== แก้ข้อมูลแขกตรงนี้ =====
- แต่ละบรรทัด = [โต๊ะ, ฝ่าย(G เจ้าบ่าว/B เจ้าสาว), หมวด(0 ญาติ/1 เพื่อน/2 คนที่ทำงาน), กลุ่มย่อย(ลำดับใน STRUCT), "รายชื่อคั่นด้วย ,"]
+ แต่ละบรรทัด = [โต๊ะ, ฝ่าย(G เจ้าบ่าว/B เจ้าสาว), หมวด(0 ญาติ/1 เพื่อน/2 ที่ทำงาน), กลุ่มย่อย(ลำดับใน STRUCT), "รายชื่อคั่นด้วย ,"]
  ลำดับรายชื่อ = ลำดับที่นั่งรอบโต๊ะ (ตามเข็มนาฬิกา เริ่มจากบนสุด) */
 const TITLE='งานแต่งงานของเรา';
 const S={G:'ฝ่ายเจ้าบ่าว',B:'ฝ่ายเจ้าสาว'};
-const STRUCT=[['ญาติ',['ญาติฝ่ายพ่อ','ญาติฝ่ายแม่']],['เพื่อน',['เพื่อนประถม','เพื่อนมัธยม','เพื่อนมหาลัย']],['คนที่ทำงาน',['ทำงานที่ A','ทำงานที่ B','ทำงานที่ C']]];
+const STRUCT=[['ญาติ',['ญาติฝ่ายพ่อ','ญาติฝ่ายแม่']],['เพื่อน',['เพื่อนประถม','เพื่อนมัธยม','เพื่อนมหาลัย']],['ที่ทำงาน',['ทำงานที่ A','ทำงานที่ B','ทำงานที่ C']]];
 const FN='กมล,กนก,กานต์,จิรา,ชัย,ณัฐ,ดวง,ธีร์,นิดา,บุญ,ปรีย์,ภัทร,มนัส,ยุพา,รัตน์,ลภัส,วรา,ศิริ,สมร,อรุณ,เอก,ไพร,กุล,ฉัตร'.split(',');
 const gen=(sn,n,o=0)=>Array.from({length:n},(_,i)=>FN[(o+i)%FN.length]+' '+sn).join(','); // ตัวช่วยสร้างชื่อตัวอย่าง ลบได้เมื่อใส่รายชื่อจริง
 const RAW=[
@@ -176,11 +181,11 @@ function mapSvg(ht,me){
 /* ---- ผลลัพธ์: โต๊ะ + ผัง + เพื่อนร่วมโต๊ะ ---- */
 function result(t,me){
  const m=TM[t],g=me!=null?D[me]:null;
- const head=g?`<div class="tag">#${TITLE}</div><div class="mut">ยินดีต้อนรับ</div><b style="font-size:1.2rem">${g.name}</b><div class="sep"></div><b>โต๊ะของคุณ</b>`:`<div class="tag">#${TITLE}</div><b>โต๊ะหมายเลข</b>`;
+ const head=g?`<div class="tag">#${TITLE}</div><div class="mut">ยินดีต้อนรับ</div><b style="font-size:1.2rem">${g.name}</b><div class="sep"></div><b>โต๊ะของคุณ คือ โต๊ะหมายเลข</b>`:`<div class="tag">#${TITLE}</div><b>โต๊ะหมายเลข</b>`;
  return `<div class="card gold">${SP}${head}<div class="big">${t}</div><span class="pill ${m.s}">${tLabel(m)}</span></div>
  <h2>เส้นทางไปโต๊ะ${g?'ของคุณ':''}</h2><div class="card mapc">${mapSvg(t,me)}</div>
  <h2>นั่งโต๊ะเดียวกับ</h2><div class="chips">${m.g.map(x=>`<a class="chip ${x.id===me?'me':''}" href="#guest-${x.id}"><span class="av ${x.s}">${ini(x.name)}</span><span>${x.name}</span></a>`).join('')}</div>
- <a class="out" href="#home">${g?'ไม่ใช่ฉัน ค้นหาใหม่':'กลับหน้าแรก'}</a>`}
+ <a class="out" href="#home">${g?'ค้นหาใหม่':'กลับหน้าแรก'}</a>`}
 
 /* ---- หน้าต่างๆ ---- */
 const pages={
@@ -190,11 +195,11 @@ const pages={
   <div class="two"><a class="btn G" href="#side-G">${GROOM}<span>${S.G}</span></a><a class="btn B" href="#side-B">${BRIDE}<span>${S.B}</span></a></div>
   <p class="lnk"><a href="#tables">ดูทุกโต๊ะ ›</a></p>`;
   const q=document.getElementById('q'),dd=document.getElementById('dd');
-  const upd=()=>{const v=q.value.trim().toLowerCase();if(!v){dd.hidden=true;return}
+  const upd=()=>{const v=q.value.trim().toLowerCase();if(v.length<2){dd.hidden=true;dd.innerHTML='';return}
    const r=D.filter(x=>x.name.toLowerCase().includes(v)).slice(0,8);
    dd.hidden=false;dd.innerHTML=r.length?r.map(x=>`<a href="#guest-${x.id}"><span>${x.name}</span><small>โต๊ะ ${x.t}</small></a>`).join(''):'<div class="empty">ไม่พบรายชื่อ ลองตรวจสอบการสะกดอีกครั้ง</div>'};
   q.addEventListener('input',upd);
-  q.addEventListener('keydown',e=>{if(e.key==='Enter'){const a=dd.querySelector('a');if(a)location.hash=a.getAttribute('href')}});
+  q.addEventListener('keydown',e=>{if(e.key==='Enter'&&!dd.hidden){const a=dd.querySelector('a');if(a)location.hash=a.getAttribute('href')}});
  },
  side(s){
   const cats=STRUCT.map(([n],i)=>[i,n,D.filter(x=>x.s===s&&x.c===i).length]).filter(c=>c[2]);
@@ -204,7 +209,7 @@ const pages={
   $app.innerHTML=`${crumb([['home','หน้าแรก'],['side-'+s,S[s]]],STRUCT[c][0])}<h1>${STRUCT[c][0]} · ${S[s]}</h1><p class="sub">เลือกกลุ่มย่อยของคุณ</p><div class="list">${subs.map(([u,n,k])=>`<a class="item" href="#sub-${s}-${c}-${u}"><span>${n}</span><span class="n">${k} ท่าน ›</span></a>`).join('')}</div>`},
  sub(s,c,u){
   const ts=TN.filter(t=>TM[t].s===s&&TM[t].c===c&&TM[t].u===u);
-  $app.innerHTML=`${crumb([['home','หน้าแรก'],['side-'+s,S[s]],[`cat-${s}-${c}`,STRUCT[c][0]]],STRUCT[c][1][u])}<h1>${STRUCT[c][1][u]}</h1><p class="sub">${S[s]} · แตะที่ชื่อของคุณ</p>${ts.map(t=>`<h2 style="margin:18px 0 8px"><a href="#table-${t}">โต๊ะ ${t} ›</a></h2><div class="chips">${TM[t].g.map(x=>`<a class="chip" href="#guest-${x.id}"><span class="av ${x.s}">${ini(x.name)}</span><span>${x.name}</span></a>`).join('')}</div>`).join('')||'<div class="empty">ยังไม่มีรายชื่อ</div>'}`},
+  $app.innerHTML=`${crumb([['home','หน้าแรก'],['side-'+s,S[s]],[`cat-${s}-${c}`,STRUCT[c][0]]],STRUCT[c][1][u])}<h1>${STRUCT[c][1][u]}</h1><p class="sub">${S[s]} · คลิกรายชื่อเพื่อดูตำแหน่งที่นั่ง</p>${ts.map(t=>`<h2 style="margin:18px 0 8px"><a href="#table-${t}">โต๊ะ ${t} ›</a></h2><div class="chips">${TM[t].g.map(x=>`<a class="chip" href="#guest-${x.id}"><span class="av ${x.s}">${ini(x.name)}</span><span>${x.name}</span></a>`).join('')}</div>`).join('')||'<div class="empty">ยังไม่มีรายชื่อ</div>'}`},
  tables(){
   $app.innerHTML=`${back('home','หน้าแรก')}<h1>ทุกโต๊ะ</h1><p class="sub">แตะที่โต๊ะเพื่อดูแผนผังและตำแหน่ง</p><div class="tgrid">${TN.map(t=>{const m=TM[t];return`<a class="tc" href="#table-${t}"><div class="tn">${t}</div><div style="min-width:0"><b>${tLabel(m)}</b><ul>${m.g.map(x=>`<li>${x.name}</li>`).join('')}</ul></div></a>`}).join('')}</div>`},
  guest(id){const g=D[id];if(!g)return nf();$app.innerHTML=result(g.t,id)},

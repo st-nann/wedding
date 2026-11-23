@@ -114,6 +114,29 @@ html{color-scheme:light;background:rgb(255,226,196)}body{background:var(--bgimg)
 .crumb a{background:var(--card);border:1px solid var(--bd);color:var(--tx)}
 .crumb b{background:var(--bs);border:1px solid var(--bs);color:var(--tx);font-weight:600}
 .crumb i{opacity:.5}
+button.btn{font:inherit;cursor:pointer;color:var(--tx)}
+.sbox input{padding-right:48px}
+.qc{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:50%;background:var(--bs);color:var(--tx);font-size:.85rem;cursor:pointer;display:grid;place-items:center}
+.qc[hidden]{display:none}
+.cw{position:relative;min-width:0}
+.cw .chip{height:100%}
+.cw.m .chip{padding-right:62px}
+.mv{position:absolute;right:8px;top:50%;transform:translateY(-50%);border:1px solid var(--gold);background:var(--golds);color:var(--tx);border-radius:99px;padding:2px 11px;font:inherit;font-size:.75rem;cursor:pointer}
+.eb{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--golds);border:1px dashed var(--gold);border-radius:14px;padding:8px 12px;margin:0 0 12px;font-size:.85rem}
+.eb button,.eb a{border:1px solid var(--gold);background:var(--card);color:var(--tx);border-radius:99px;padding:2px 12px;font:inherit;font-size:.8rem;cursor:pointer}
+.eb a{margin-left:auto}
+.eb textarea{width:100%;font-size:.75rem;border:1px solid var(--bd);border-radius:10px;padding:6px;background:var(--card);color:var(--tx)}
+.ov{position:fixed;inset:0;background:rgba(51,41,112,.38);display:grid;place-items:center;z-index:50;padding:16px}
+.dlg{background:var(--card);border-radius:22px;padding:22px;width:min(100%,340px);box-shadow:0 16px 48px rgba(51,41,112,.3)}
+.dlg h3{margin:0 0 6px;font-size:1.15rem}
+.dlg p{margin:0 0 12px}
+.dlg input{width:100%;padding:13px 14px;font:inherit;font-size:1.05rem;border:2px solid var(--bd);border-radius:14px;background:var(--card);color:var(--tx)}
+.dlg input:focus{outline:none;border-color:var(--gold)}
+.dlg .err{color:#d33;min-height:1.3em;font-size:.85rem;margin:6px 0}
+.dlg .two{margin:6px 0 0}
+.btn.on{background:var(--bs);border-color:var(--bs)}
+.crumb.G a{border-color:var(--gs)}
+.crumb.G b{background:var(--gs);border-color:var(--gs)}
 </style>
 </head>
 <body>
@@ -157,25 +180,35 @@ const SEATS=10,COLS=3;
 const D=[],TM={};
 RAW.forEach(([t,s,c,u,ns])=>{TM[t]={t,s,c,u,g:[]};ns.split(',').forEach(n=>{const x={id:D.length,name:'คุณ'+n.trim(),t,s,c,u};D.push(x);TM[t].g.push(x)})});
 const TN=Object.keys(TM).map(Number).sort((a,b)=>a-b);
+const MOVES={}; /* ย้ายแขก {"คุณชื่อ นามสกุล":เลขโต๊ะ} คัดลอกค่าจากแถบโหมดแก้ไข (#edit) มาวางที่นี่ */
+const ALWAYS_EDIT=true; /* true = แสดงปุ่มย้ายแขกตลอด (ใช้ตอนจัดที่นั่ง) — ตั้งเป็น false ก่อนแชร์ให้แขก แล้วเปิดเองที่ #edit */
+let MV=Object.assign({},MOVES),EDIT=ALWAYS_EDIT;
+try{Object.assign(MV,JSON.parse(localStorage.getItem('seat-moves')||'{}'));EDIT=EDIT||localStorage.getItem('seat-edit')==='1'}catch(e){}
+function moveGuest(x,t){TM[x.t].g=TM[x.t].g.filter(y=>y!==x);x.t=t;TM[t].g.push(x)}
+Object.entries(MV).forEach(([n,t])=>{const x=D.find(y=>y.name===n);if(x&&TM[t]&&x.t!==+t)moveGuest(x,+t)});
 const grpName=m=>STRUCT[m.c][1][m.u];
 const tLabel=m=>grpName(m)+' · '+S[m.s];
 const ini=n=>(n.replace('คุณ','').match(/[ก-ฮA-Za-z]/)||['•'])[0];
 const $app=document.getElementById('app');
-const crumb=(a,cur)=>`<nav class="crumb">${a.map(([h,l])=>`<a href="#${h}">${l}</a>`).join('<i>›</i>')}<i>›</i><b>${cur}</b></nav>`;
+const crumb=(a,cur,sd)=>`<nav class="crumb ${sd||''}">${a.map(([h,l])=>`<a href="#${h}">${l}</a>`).join('<i>›</i>')}<i>›</i><b>${cur}</b></nav>`;
 const back=(h,l)=>`<a class="back" href="#${h}">‹ ${l||'ย้อนกลับ'}</a>`;
 
 /* ---- แผนผัง ---- */
-const pos=t=>{const i=TN.indexOf(t);return{cx:110+(i%COLS)*200,cy:150+Math.floor(i/COLS)*150,col:i%COLS}};
-function mapSvg(ht,me){
- const rows=Math.ceil(TN.length/COLS),H=150*rows+130;
+const POS={}; /* ตำแหน่งโต๊ะที่ลากแล้ว {เลขโต๊ะ:[x,y]} คัดลอกค่าจากหน้า #edit มาวางที่นี่ */
+let LAY=Object.assign({},POS);
+try{const sv=JSON.parse(localStorage.getItem('seat-layout')||'null');if(sv)LAY=Object.assign(LAY,sv)}catch(e){}
+const grid=t=>{const i=TN.indexOf(t);return{cx:110+(i%COLS)*200,cy:150+Math.floor(i/COLS)*150,col:i%COLS}};
+const pos=t=>{const o=LAY[t];return o?{cx:o[0],cy:o[1],col:-1}:grid(t)};
+function mapSvg(ht,me,ed){
+ const H=Math.max(...TN.map(t=>pos(t).cy))+130;
  let h=`<svg viewBox="0 0 620 ${H}" role="img" aria-label="แผนผังโต๊ะ"><rect class="floor" x="6" y="6" width="608" height="${H-12}" rx="24"/><rect class="stg" x="180" y="18" width="260" height="46" rx="12"/><text class="lb" style="fill:#fff" x="310" y="41">เวที</text><text class="lb" x="310" y="${H-22}">▲ ทางเข้า</text>`;
- if(ht){const p=pos(ht),ax=p.col===0?210:p.col===1?210:410,ex=p.col===0?p.cx+58:p.cx-58;
-  h+=`<path class="rt" d="M${ax} ${H-40} V${p.cy} H${ex}"/>`}
- TN.forEach((t,ti)=>{const p=pos(t),m=TM[t],on=t===ht;h+=`<g class="tg" style="animation-delay:${(.1+ti*.07).toFixed(2)}s">`+(on?`<circle class="pr" cx="${p.cx}" cy="${p.cy}" r="56"/>`:'');
+ if(ht){const p=pos(ht),ax=p.col===0?210:p.col===1?210:410,ex=p.col===0?p.cx+58:p.cx-58,d=p.col<0?`M310 ${H-40} L${p.cx} ${p.cy+62}`:`M${ax} ${H-40} V${p.cy} H${ex}`;
+  h+=`<path class="rt" d="${d}"/>`}
+ TN.forEach((t,ti)=>{const p=pos(t),m=TM[t],on=t===ht;h+=`<g class="tg" data-t="${t}" style="animation-delay:${(.1+ti*.07).toFixed(2)}s">`+(on?`<circle class="pr" cx="${p.cx}" cy="${p.cy}" r="56"/>`:'');
   h+=`<circle class="tbl ${on?'hl':''}" cx="${p.cx}" cy="${p.cy}" r="30"/>`;
   for(let i=0;i<SEATS;i++){const a=(-90+i*360/SEATS)*Math.PI/180,g=m.g[i],mine=me!=null&&g&&g.id===me;
    h+=`<circle class="sd ${g?g.s:''} ${mine?'me':''}" cx="${(p.cx+Math.cos(a)*46).toFixed(1)}" cy="${(p.cy+Math.sin(a)*46).toFixed(1)}" r="${mine?10:7}"/>`}
-  h+=`<a href="#table-${t}"><text class="tt" x="${p.cx}" y="${p.cy}">${t}</text></a></g>`});
+  h+=`${ed?'':`<a href="#table-${t}">`}<text class="tt" x="${p.cx}" y="${p.cy}">${t}</text>${ed?'':'</a>'}</g>`});
  return h+'</svg>'}
 
 /* ---- ผลลัพธ์: โต๊ะ + ผัง + เพื่อนร่วมโต๊ะ ---- */
@@ -184,32 +217,32 @@ function result(t,me){
  const head=g?`<div class="tag">#${TITLE}</div><div class="mut">ยินดีต้อนรับ</div><b style="font-size:1.2rem">${g.name}</b><div class="sep"></div><b>โต๊ะของคุณ คือ</b>`:`<div class="tag">#${TITLE}</div><b>โต๊ะหมายเลข</b>`;
  return `<div class="card gold">${SP}${head}<div class="big">${t}</div><span class="pill ${m.s}">${tLabel(m)}</span></div>
  <h2>เส้นทางไปโต๊ะ${g?'ของคุณ':''}</h2><div class="card mapc">${mapSvg(t,me)}</div>
- <h2>นั่งโต๊ะเดียวกับ</h2><div class="chips">${m.g.map(x=>`<a class="chip ${x.id===me?'me':''}" href="#guest-${x.id}"><span class="av ${x.s}">${ini(x.name)}</span><span>${x.name}</span></a>`).join('')}</div>
+ <h2>นั่งโต๊ะเดียวกับ</h2><div class="chips">${m.g.map(x=>chipHtml(x,x.id===me?'me':'')).join('')}</div>
  <a class="out" href="#home">${g?'ค้นหาใหม่':'กลับหน้าแรก'}</a>`}
 
 /* ---- หน้าต่างๆ ---- */
 const pages={
  home(){
   $app.innerHTML=`<div class="hero"><div class="tag">#${TITLE}</div><h1>ค้นหาที่นั่งของคุณ</h1><p class="sub">พิมพ์ชื่อของคุณ หรือเลือกจากกลุ่มด้านล่าง</p></div>
-  <div class="sbox"><input id="q" type="search" placeholder="🔍 พิมพ์ชื่อหรือนามสกุล…" autocomplete="off"><div class="dd" id="dd" hidden></div></div><p class="hint">💡 พิมพ์แค่ 2–3 ตัวอักษรของชื่อหรือนามสกุล ก็จะมีรายชื่อแนะนำขึ้นมา</p>
+  <div class="sbox"><input id="q" type="text" placeholder="🔍 พิมพ์ชื่อหรือนามสกุล…" autocomplete="off"><button class="qc" id="qc" type="button" aria-label="ล้างคำค้นหา" hidden>✕</button><div class="dd" id="dd" hidden></div></div><p class="hint">💡 พิมพ์แค่ 2–3 ตัวอักษรของชื่อหรือนามสกุล ก็จะมีรายชื่อแนะนำขึ้นมา</p>
   <div class="two"><a class="btn G" href="#side-G">${GROOM}<span>${S.G}</span></a><a class="btn B" href="#side-B">${BRIDE}<span>${S.B}</span></a></div>
   <p class="lnk"><a href="#tables">ดูทุกโต๊ะ ›</a></p>`;
   const q=document.getElementById('q'),dd=document.getElementById('dd');
-  const upd=()=>{const v=q.value.trim().toLowerCase();if(v.length<2){dd.hidden=true;dd.innerHTML='';return}
+  const upd=()=>{document.getElementById('qc').hidden=!q.value;const v=q.value.trim().toLowerCase();if(v.length<2){dd.hidden=true;dd.innerHTML='';return}
    const r=D.filter(x=>x.name.toLowerCase().includes(v)).slice(0,8);
    dd.hidden=false;dd.innerHTML=r.length?r.map(x=>`<a href="#guest-${x.id}"><span>${x.name}</span><small>โต๊ะ ${x.t}</small></a>`).join(''):'<div class="empty">ไม่พบรายชื่อ ลองตรวจสอบการสะกดอีกครั้ง</div>'};
-  q.addEventListener('input',upd);
+  q.addEventListener('input',upd);document.getElementById('qc').onclick=()=>{q.value='';upd();q.focus()};
   q.addEventListener('keydown',e=>{if(e.key==='Enter'&&!dd.hidden){const a=dd.querySelector('a');if(a)location.hash=a.getAttribute('href')}});
  },
  side(s){
   const cats=STRUCT.map(([n],i)=>[i,n,D.filter(x=>x.s===s&&x.c===i).length]).filter(c=>c[2]);
-  $app.innerHTML=`${crumb([['home','หน้าแรก']],S[s])}<h1>${S[s]}</h1><p class="sub">เลือกหมวดหมู่ของคุณ</p><div class="list">${cats.map(([i,n,k])=>`<a class="item" href="#cat-${s}-${i}"><span>${n}</span><span class="n">${k} ท่าน ›</span></a>`).join('')}</div>`},
+  $app.innerHTML=`${crumb([['home','หน้าแรก']],S[s],s)}<h1>${S[s]}</h1><p class="sub">เลือกหมวดหมู่ของคุณ</p><div class="list">${cats.map(([i,n,k])=>`<a class="item" href="#cat-${s}-${i}"><span>${n}</span><span class="n">${k} ท่าน ›</span></a>`).join('')}</div>`},
  cat(s,c){
   const subs=STRUCT[c][1].map((n,u)=>[u,n,D.filter(x=>x.s===s&&x.c===c&&x.u===u).length]).filter(x=>x[2]);
-  $app.innerHTML=`${crumb([['home','หน้าแรก'],['side-'+s,S[s]]],STRUCT[c][0])}<h1>${STRUCT[c][0]} · ${S[s]}</h1><p class="sub">เลือกกลุ่มย่อยของคุณ</p><div class="list">${subs.map(([u,n,k])=>`<a class="item" href="#sub-${s}-${c}-${u}"><span>${n}</span><span class="n">${k} ท่าน ›</span></a>`).join('')}</div>`},
+  $app.innerHTML=`${crumb([['home','หน้าแรก'],['side-'+s,S[s]]],STRUCT[c][0],s)}<h1>${STRUCT[c][0]} · ${S[s]}</h1><p class="sub">เลือกกลุ่มย่อยของคุณ</p><div class="list">${subs.map(([u,n,k])=>`<a class="item" href="#sub-${s}-${c}-${u}"><span>${n}</span><span class="n">${k} ท่าน ›</span></a>`).join('')}</div>`},
  sub(s,c,u){
   const ts=TN.filter(t=>TM[t].s===s&&TM[t].c===c&&TM[t].u===u);
-  $app.innerHTML=`${crumb([['home','หน้าแรก'],['side-'+s,S[s]],[`cat-${s}-${c}`,STRUCT[c][0]]],STRUCT[c][1][u])}<h1>${STRUCT[c][1][u]}</h1><p class="sub">${S[s]} · คลิกรายชื่อเพื่อดูตำแหน่งที่นั่ง</p>${ts.map(t=>`<h2 style="margin:18px 0 8px"><a href="#table-${t}">โต๊ะ ${t} ›</a></h2><div class="chips">${TM[t].g.map(x=>`<a class="chip" href="#guest-${x.id}"><span class="av ${x.s}">${ini(x.name)}</span><span>${x.name}</span></a>`).join('')}</div>`).join('')||'<div class="empty">ยังไม่มีรายชื่อ</div>'}`},
+  $app.innerHTML=`${crumb([['home','หน้าแรก'],['side-'+s,S[s]],[`cat-${s}-${c}`,STRUCT[c][0]]],STRUCT[c][1][u],s)}<h1>${STRUCT[c][1][u]}</h1><p class="sub">${S[s]} · คลิกรายชื่อเพื่อดูตำแหน่งที่นั่ง</p>${ts.map(t=>`<h2 style="margin:18px 0 8px"><a href="#table-${t}">โต๊ะ ${t} ›</a> <small class="mut" style="font-weight:400;font-size:.82rem">(${TM[t].g.length}/${SEATS} คน)</small></h2><div class="chips">${TM[t].g.map(x=>chipHtml(x)).join('')}</div>`).join('')||'<div class="empty">ยังไม่มีรายชื่อ</div>'}`},
  tables(){
   $app.innerHTML=`${back('home','หน้าแรก')}<h1>ทุกโต๊ะ</h1><p class="sub">แตะที่โต๊ะเพื่อดูแผนผังและตำแหน่ง</p><div class="tgrid">${TN.map(t=>{const m=TM[t];return`<a class="tc" href="#table-${t}"><div class="tn">${t}</div><div style="min-width:0"><b>${tLabel(m)}</b><ul>${m.g.map(x=>`<li>${x.name}</li>`).join('')}</ul></div></a>`}).join('')}</div>`},
  guest(id){const g=D[id];if(!g)return nf();$app.innerHTML=result(g.t,id)},
@@ -222,10 +255,26 @@ const TITLE_IMG='data:image/webp;base64,UklGRvp5AQBXRUJQVlA4WAoAAAAQAAAA9wIA0gEA
 const HDR=`<div class='hdr'><a href='#home'>${TITLE_IMG?`<img class='ttl' src='${TITLE_IMG}' alt='${TITLE}'>`:`<span class='hdrt'>#${TITLE}</span>`}</a>${DECOR_IMG?`<img class='dec' src='${DECOR_IMG}' alt=''>`:''}</div>`;
 const GROOM=`<svg viewBox='0 0 80 80' aria-hidden='true'><path d='M14 80Q14 46 40 44Q66 46 66 80Z' fill='#332970'/><path d='M33 44L40 64L47 44Z' fill='#fff'/><path d='M40 50L32 45V55ZM40 50L48 45V55Z' fill='#ffcbc4'/><circle cx='40' cy='27' r='13' fill='#ffe3cf'/><path d='M27 25Q28 11 40 12Q52 11 53 25Q46 17 40 18Q34 17 27 25Z' fill='#332970'/><circle cx='35' cy='28' r='1.5' fill='#332970'/><circle cx='45' cy='28' r='1.5' fill='#332970'/><path d='M36 33Q40 37 44 33' stroke='#332970' fill='none' stroke-width='1.6' stroke-linecap='round'/></svg>`;
 const BRIDE=`<svg viewBox='0 0 80 80' aria-hidden='true'><path d='M40 6Q10 12 12 62L68 62Q70 12 40 6Z' fill='#fff' stroke='#bfd5f4' stroke-width='2'/><path d='M22 80Q26 48 40 46Q54 48 58 80Z' fill='#fff' stroke='#ffcbc4' stroke-width='2'/><circle cx='40' cy='27' r='13' fill='#ffe3cf'/><path d='M27 27Q26 11 40 12Q54 11 53 27Q48 18 40 19Q32 18 27 27Z' fill='#332970'/><circle cx='35' cy='29' r='1.5' fill='#332970'/><circle cx='45' cy='29' r='1.5' fill='#332970'/><path d='M36 34Q40 38 44 34' stroke='#332970' fill='none' stroke-width='1.6' stroke-linecap='round'/><circle cx='31' cy='13' r='4' fill='#ffcbc4'/><circle cx='40' cy='10' r='4' fill='#fff9c4'/><circle cx='49' cy='13' r='4' fill='#ffcbc4'/><circle cx='40' cy='62' r='5' fill='#ffcbc4'/><circle cx='36' cy='65' r='4' fill='#fff9c4'/><circle cx='45' cy='65' r='4' fill='#bfd5f4'/></svg>`;
+/* โหมดแก้ไข: เปิดที่ #edit จะมีปุ่ม "ย้าย" หลังชื่อแขก, ปิดที่ #exit */
+pages.edit=function(){EDIT=true;try{localStorage.setItem('seat-edit','1')}catch(e){}location.hash='home'};
+pages.exit=function(){EDIT=false;try{localStorage.removeItem('seat-edit')}catch(e){}location.hash='home'};
+function saveMv(){try{localStorage.setItem('seat-moves',JSON.stringify(MV))}catch(e){}}
+function chipHtml(x,c){return `<div class="cw ${EDIT?'m':''}"><a class="chip ${c||''}" href="#guest-${x.id}"><span class="av ${x.s}">${ini(x.name)}</span><span>${x.name}</span></a>${EDIT?`<button class="mv" data-g="${x.id}">ย้าย</button>`:''}</div>`}
+function BAR(){const n=Object.keys(MV).length;return `<div class="eb"><b>โหมดแก้ไข</b><span>ย้ายแล้ว ${n} คน</span>${n?`<button id="cpm">คัดลอกรายการย้าย</button><button id="rsm">ล้างการย้าย</button>`:''}<a href="#exit">ออก</a>${n?`<textarea readonly rows="2">const MOVES=${JSON.stringify(MV)};</textarea>`:''}</div>`}
+function openMove(id){const x=D[id],ov=document.createElement('div');ov.className='ov';
+ ov.innerHTML=`<div class="dlg" role="dialog"><h3>ย้ายโต๊ะ</h3><p>${x.name}<br><span class="mut">ปัจจุบัน: โต๊ะ ${x.t}</span></p><input id="mvt" type="number" inputmode="numeric" min="1" placeholder="กรอกเลขโต๊ะที่ย้ายไป"><p class="err" id="mve"></p><div class="two"><button class="btn" id="mvx">ยกเลิก</button><button class="btn on" id="mvo">ย้าย</button></div></div>`;
+ document.body.appendChild(ov);const inp=ov.querySelector('#mvt'),er=ov.querySelector('#mve'),close=()=>ov.remove();inp.focus();
+ const ok=()=>{const t=+inp.value;if(!TM[t]){er.textContent='ไม่พบโต๊ะหมายเลข '+inp.value;return}if(t===x.t){er.textContent='แขกนั่งโต๊ะนี้อยู่แล้ว';return}if(TM[t].g.length>=SEATS){er.textContent='โต๊ะ '+t+' เต็มแล้ว ('+SEATS+'/'+SEATS+' คน)';return}
+  moveGuest(x,t);MV[x.name]=t;saveMv();close();const y=scrollY;route();scrollTo(0,y)};
+ ov.querySelector('#mvx').onclick=close;ov.querySelector('#mvo').onclick=ok;ov.addEventListener('click',e=>{if(e.target===ov)close()});
+ inp.addEventListener('keydown',e=>{if(e.key==='Enter')ok();if(e.key==='Escape')close()})}
+document.addEventListener('click',e=>{const b=e.target.closest('.mv');if(b){e.preventDefault();openMove(+b.dataset.g);return}
+ if(e.target.id==='cpm'){try{navigator.clipboard.writeText('const MOVES='+JSON.stringify(MV)+';').then(()=>{e.target.textContent='คัดลอกแล้ว ✓'},()=>{})}catch(_){}}
+ if(e.target.id==='rsm'){MV=Object.assign({},MOVES);try{localStorage.removeItem('seat-moves')}catch(_){}location.reload()}});
 function countUp(){const e=document.querySelector('.big');if(!e)return;const n=+e.textContent,t0=performance.now();(function f(t){const k=Math.min((t-t0)/900,1);e.textContent=Math.max(1,Math.round(n*(1-Math.pow(1-k,3))));if(k<1)requestAnimationFrame(f)})(t0)}
 function route(){
  const p=(location.hash||'#home').slice(1).split('-'),k=p[0],n=p.slice(1).map((v,i)=>i===0&&(k==='side'||k==='cat'||k==='sub')?v:+v);
- (pages[k]||nf)(...n);$app.insertAdjacentHTML('afterbegin',HDR);window.scrollTo(0,0);countUp()}
+ (pages[k]||nf)(...n);$app.insertAdjacentHTML('afterbegin',(EDIT?BAR():'')+HDR);window.scrollTo(0,0);countUp()}
 (function(){const box=document.getElementById('petals');if(!box)return;
 const cols=[['#f6a5b0','#fff3a0'],['#bfd5f4','#fff9c4'],['#ffffff','#ffd7a0','#f0c4c0'],['#fff3a0','#f6a5b0','#e8d36a']];
 const mk=(p,c,st)=>{let g='';for(let i=0;i<5;i++){const a=(i*72-90)*Math.PI/180;g+=`<circle cx='${(12+6.2*Math.cos(a)).toFixed(1)}' cy='${(12+6.2*Math.sin(a)).toFixed(1)}' r='4.6'/>`}
